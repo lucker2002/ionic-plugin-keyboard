@@ -20,10 +20,8 @@ import android.view.inputmethod.InputMethodManager;
 import android.view.Display;
 import android.graphics.Point;
 import android.os.Build;
-
+import android.view.Window;
 public class IonicKeyboard extends CordovaPlugin {
-    private OnGlobalLayoutListener list;
-    private View rootView;
 
     public void initialize(CordovaInterface cordova, CordovaWebView webView) {
         super.initialize(cordova, webView);
@@ -66,11 +64,14 @@ public class IonicKeyboard extends CordovaPlugin {
                     final float density = dm.density;
 
                     //http://stackoverflow.com/a/4737265/1091751 detect if keyboard is showing
-                    rootView = cordova.getActivity().getWindow().getDecorView().findViewById(android.R.id.content).getRootView();
-                    list = new OnGlobalLayoutListener() {
+                    final View rootView = cordova.getActivity().getWindow().getDecorView().findViewById(android.R.id.content).getRootView();
+                    OnGlobalLayoutListener list = new OnGlobalLayoutListener() {
                         int previousHeightDiff = 0;
                         @Override
                         public void onGlobalLayout() {
+                            final Window window = cordova.getActivity().getWindow();
+                            boolean isHidden = (window.getDecorView().getSystemUiVisibility() & View.SYSTEM_UI_FLAG_HIDE_NAVIGATION) == View.SYSTEM_UI_FLAG_HIDE_NAVIGATION;
+
                             Rect r = new Rect();
                             //r will be populated with the coordinates of your view that area still visible.
                             rootView.getWindowVisibleDisplayFrame(r);
@@ -97,7 +98,7 @@ public class IonicKeyboard extends CordovaPlugin {
                             int heightDiff = screenHeight - resultBottom;
 
                             int pixelHeightDiff = (int)(heightDiff / density);
-                            if (pixelHeightDiff > 100 && pixelHeightDiff != previousHeightDiff) { // if more than 100 pixels, its probably a keyboard...
+                            if (pixelHeightDiff > 100 && pixelHeightDiff != previousHeightDiff&&!isHidden) { // if more than 100 pixels, its probably a keyboard...
                                 String msg = "S" + Integer.toString(pixelHeightDiff);
                                 result = new PluginResult(PluginResult.Status.OK, msg);
                                 result.setKeepCallback(true);
@@ -126,10 +127,6 @@ public class IonicKeyboard extends CordovaPlugin {
         return false;  // Returning false results in a "MethodNotFound" error.
     }
 
-    @Override
-    public void onDestroy() {
-        rootView.getViewTreeObserver().removeOnGlobalLayoutListener(list);
-    }
 
 }
 
